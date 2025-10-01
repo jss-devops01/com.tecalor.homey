@@ -1,0 +1,29 @@
+{
+  "id": "com.tecalor.homey",
+  "version": "1.0.7",
+  "compatibility": ">=12.2.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "tecalor"
+  },
+  "description": {
+    "en": "Adds support for tecalor devices."
+  },
+  "category": [
+    "climate"
+  ],
+  "brandColor": "#007ACC",
+  "permissions": [],
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "author": {
+    "name": "Jean-Sebastien Susset",
+    "email": "js.susset@gmail.com"
+  }
+}

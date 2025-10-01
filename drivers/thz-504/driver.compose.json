@@ -1,0 +1,116 @@
+{
+  "name": {
+    "en": "THZ-504 ESPHome Heat Pump"
+  },
+  "class": "heatpump",
+  "capabilities": [
+    "measure_temperature",
+    "target_temperature",
+    "thermostat_mode",
+    "measure_current",
+    "meter_power",
+    "alarm_generic",
+    "measure_humidity",
+    "measure_power",
+    "measure_pressure",
+    "onoff"
+  ],
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "lan"
+  ],
+  "images": {
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  },
+  "pair": [
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": {
+        "next": "add_devices"
+      },
+      "options": { "singular": true }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices",
+       "navigation": {
+        "next": "done"
+      }
+    },
+    {
+      "id": "done",
+      "template": "done"
+    }
+  ],
+  "settings": [
+    {
+      "type": "group",
+      "label": {
+        "en": "Connection Settings"
+      },
+      "children": [
+        {
+          "id": "ip_address",
+          "type": "text",
+          "label": {
+            "en": "IP Address"
+          },
+          "value": "192.168.200.80",
+          "hint": {
+            "en": "IP address of the ESPHome device"
+          }
+        },
+        {
+          "id": "port",
+          "type": "number",
+          "label": {
+            "en": "Port"
+          },
+          "value": 6053,
+          "min": 1,
+          "max": 65535,
+          "hint": {
+            "en": "ESPHome API port (default: 6053)"
+          }
+        },
+        {
+          "id": "encryption_key",
+          "type": "password",
+          "label": {
+            "en": "Encryption Key"
+          },
+          "value": "Quvqw/PaxsHQ90BGdFN1jgDJ8iGgX2QfGVdvZttBemA=",
+          "hint": {
+            "en": "ESPHome API encryption key (base64 encoded)"
+          }
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "label": {
+        "en": "Device Settings"
+      },
+      "children": [
+        {
+          "id": "poll_interval",
+          "type": "number",
+          "label": {
+            "en": "Poll Interval (seconds)"
+          },
+          "value": 30,
+          "min": 5,
+          "max": 300,
+          "hint": {
+            "en": "How often to poll the device for updates"
+          }
+        }
+      ]
+    }
+  ]
+}
