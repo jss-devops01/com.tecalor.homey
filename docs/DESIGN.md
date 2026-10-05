@@ -1,19 +1,19 @@
 # Tecalor THZ 504 Homey app: design (rewrite)
 
-Status: draft, language not yet confirmed. Source of truth for entities:
+Status: draft, Python chosen pending a dependency spike. Source of truth for entities:
 `jss-devops01/ESP32-C6_THZ-504` @ `ff8e60e` (`yaml/wp_base.yaml`, `yaml/common.yaml`, `yaml/thz504.yaml`, `src/`).
 
 ## 1. Language decision
 
-Homey Pro apps run on the Homey Apps SDK, which is **Node.js only**. An app installed on the Homey cannot be Python.
+Correction: Homey now has an official **Python Apps SDK** ([announcement](https://homey.app/en-us/news/introducing-the-python-apps-sdk/), [App docs](https://apps.developer.homey.app/the-basics/app)). Facts checked on 2026-10-05:
+- Runs on Homey Pro (2023 to 2026), Homey Pro mini, Homey Cloud and Homey Self-Hosted Server. Python 3.14 on device.
+- Files are `app.py`, `driver.py`, `device.py`; manifest/compose layout is the same as for JS apps.
+- Dependencies are added with `homey app dependencies add <pkg>`; the CLI pre-compiles them in Docker (`.python_cache/`) so they ship with the app. Docker Desktop is required locally (Colima reported broken).
+- SDK package `homey` is at 0.0.11 (Aug 2026): young, expect rough edges and thin docs.
 
-| Option | Pros | Cons |
-|---|---|---|
-| **A. TypeScript Homey app (recommended)** | Runs on the Homey, no extra host; native devices, capabilities, flow cards, insights; one deployable | Not Python |
-| B. Python bridge (aioesphomeapi) on a Pi/Docker host + Homey via MQTT | Python; `aioesphomeapi` is the official, well-maintained client | Extra always-on host to run and patch; Homey side is either generic MQTT devices (no custom flow cards) or still a JS app; two failure points |
-| C. Python bridge + thin TS Homey app over HTTP | Logic in Python | Highest complexity: two codebases, a private protocol between them |
+**Decision: Python**, using [`aioesphomeapi`](https://pypi.org/project/aioesphomeapi/) (the official ESPHome client used by Home Assistant: Noise encryption, reconnect logic, mDNS via zeroconf).
 
-Recommendation: **A**. Option B only makes sense if a Python host already runs 24/7 and you accept generic MQTT devices.
+Main risk: `aioesphomeapi` pulls compiled dependencies (`cryptography`, `noiseprotocol`/`chacha20poly1305-reuseable`, `zeroconf`, `protobuf`). Step 1 is a spike that adds it via the Homey CLI, installs on the Homey and connects to the ESP. Fallback if it cannot be bundled: TypeScript with the same design.
 
 ## 2. Transport
 
@@ -22,7 +22,7 @@ Recommendation: **A**. Option B only makes sense if a Python host already runs 2
 - Pairing asks for the API encryption key (stored in device store, never in code). Host/port are updated from mDNS on IP change.
 - Entities are resolved **at runtime by `object_id`** from `ListEntities` (keys are hashes and change between builds). Unknown/missing entities are logged and skipped, never fatal.
 - One connection per ESPHome node, shared by all Homey devices of that node (app-level connection manager). Reconnect with exponential backoff (1s → 60s cap), `alarm_connectivity`-style availability via `setUnavailable()`.
-- Client library: spike `@2colors/esphome-native-api` encryption support first; if it is not reliable, port the Noise handshake into `lib/` with unit tests (as the old app did).
+- Client library: `aioesphomeapi` (see section 1).
 
 ### Security findings (act regardless of option)
 - The old app committed the API encryption key in `drivers/thz-504/driver.ts`. It is in git history: **rotate the key** in `secrets.yaml` and reflash.
@@ -129,21 +129,21 @@ All writes: range-clamped, rejected if device offline (flow fails with a clear e
 5. Numbers/selects are `optimistic: true`: ESPHome echoes the requested value before the pump confirms. The app waits for the CAN readback (Manager callback) before treating a write as applied.
 6. Daily energy counters reset at midnight on the device; the app must convert to monotonic `meter_power` for Homey Energy.
 
-## 6. App structure (TypeScript, if confirmed)
+## 6. App structure (Python)
 
 ```
-app.ts                      connection manager registry, flow card registration
-lib/esphome/                client wrapper (connect, reconnect, entity map by object_id, command API)
-lib/thz/entities.ts         single typed table: object_id → capability, scale, R/W, range
-lib/thz/errors.ts           error code → text (from firmware mapper.cpp)
-lib/thz/writes.ts           allow-listed can_send_value writes with range checks
-drivers/heatpump|hotwater|heating-circuit|ventilation/
-tests/                      unit tests on entity table, scaling, write guards, reconnect; fake ESPHome server for integration
+app.py                      connection manager registry, flow card registration
+lib/esphome_link.py         aioesphomeapi wrapper (connect, reconnect, entity map by object_id, commands)
+lib/thz/entities.py         single typed table: object_id -> capability, scale, R/W, range
+lib/thz/errors.py           error code -> text (from firmware mapper.cpp)
+lib/thz/writes.py           allow-listed can_send_value writes with range checks
+drivers/heatpump|hotwater|heating_circuit|ventilation/driver.py, device.py
+tests/                      pytest: entity table, scaling, write guards, reconnect (fake APIClient)
 ```
 
-Quality gates: `homey app validate --level publish`, ESLint, `tsc --noEmit`, Jest with coverage in the existing GitHub workflow.
+Quality gates: `homey app validate --level publish`, ruff, mypy with `homey-stubs`, pytest in the GitHub workflow.
 
 ## 7. Open questions
-- Language: A (TypeScript, recommended) or B/C (Python)?
+- Which Homey model do you run (Pro 2023+, Pro mini, Self-Hosted)? The 2019 Homey Pro is not supported by the Python SDK.
 - Room temperature source: a specific Homey sensor, an average of several, or flow-card only?
 - OK to propose the small firmware fixes in §5 (separate PR on the firmware repo)?
