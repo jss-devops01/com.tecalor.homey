@@ -9,7 +9,14 @@ jobs:
     name: Validate Homey App
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      # The app is TypeScript: tsconfig extends @tsconfig/node16, which only
+      # resolves once devDependencies are installed.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - uses: athombv/github-action-homey-app-validate@master
         with:
           level: verified
