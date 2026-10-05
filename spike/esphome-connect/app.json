@@ -1,0 +1,19 @@
+{
+  "id": "com.tecalor.homey.spike",
+  "version": "0.0.1",
+  "compatibility": ">=13.0.0",
+  "runtime": "python",
+  "pythonVersion": "3.14",
+  "pythonDependencies": [],
+  "sdk": 3,
+  "platforms": ["local"],
+  "name": { "en": "Tecalor ESPHome spike" },
+  "description": { "en": "Throwaway test: proves aioesphomeapi runs on Homey and can read the THZ 504 ESPHome node." },
+  "category": ["climate"],
+  "permissions": [],
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png"
+  },
+  "author": { "name": "Jean-Sebastien Susset" }
+}
